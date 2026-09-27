@@ -3,36 +3,48 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>2.5次元俳優 好き顔メーカー</title>
+    <title>2.5次元俳優 好き顔メーカー ＆ ランキング</title>
     <style>
-        body { font-family: sans-serif; text-align: center; background-color: #fce4ec; color: #333; }
+        body { font-family: sans-serif; text-align: center; background-color: #fce4ec; color: #333; margin: 0; padding: 20px; }
         .container { max-width: 600px; margin: 0 auto; padding: 20px; background: white; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
-        .btn { padding: 10px 20px; margin: 10px; border: none; background-color: #ff4081; color: white; border-radius: 5px; cursor: pointer; font-size: 16px; }
+        .btn { padding: 10px 20px; margin: 10px; border: none; background-color: #ff4081; color: white; border-radius: 5px; cursor: pointer; font-size: 16px; transition: 0.2s; }
         .btn:hover { background-color: #e91e63; }
+        .btn-secondary { background-color: #999; }
+        .btn-secondary:hover { background-color: #777; }
         
-        /* ランキング（2択）用のスタイル */
-        #battle-screen { display: none; }
+        /* 2択ランキング用のスタイル */
+        #battle-screen, #result-screen, #grid-screen { display: none; }
         .battle-container { display: flex; justify-content: center; gap: 20px; margin-top: 20px; }
-        .face-card { cursor: pointer; border: 2px solid transparent; border-radius: 10px; overflow: hidden; width: 150px; }
-        .face-card:hover { border-color: #ff4081; }
-        .face-card img { width: 100%; height: 150px; object-fit: cover; }
+        .face-card { cursor: pointer; border: 3px solid transparent; border-radius: 10px; overflow: hidden; width: 45%; max-width: 200px; transition: 0.2s; }
+        .face-card:hover { border-color: #ff4081; transform: scale(1.05); }
+        .face-card img { width: 100%; aspect-ratio: 1 / 1; object-fit: cover; display: block; }
+        .face-card h3 { margin: 10px 0; font-size: 16px; }
+        .progress-bar { width: 100%; background-color: #eee; border-radius: 5px; margin: 15px 0; overflow: hidden; height: 10px; }
+        .progress-fill { height: 100%; background-color: #ff4081; width: 0%; transition: 0.3s; }
         
+        /* ランキング結果のスタイル */
+        .rank-list { text-align: left; padding: 0; list-style: none; margin: 20px auto; max-width: 300px; }
+        .rank-item { padding: 10px; border-bottom: 1px solid #eee; display: flex; align-items: center; gap: 15px; font-weight: bold; }
+        .rank-item img { width: 50px; height: 50px; object-fit: cover; border-radius: 50%; }
+        .rank-num { font-size: 18px; color: #ff4081; width: 30px; }
+
         /* 9マス画像作成用のスタイル */
-        #grid-screen { display: none; }
         .actor-list { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; margin-bottom: 20px; }
         .actor-item { width: 80px; cursor: pointer; text-align: center; font-size: 12px; }
-        .actor-item img { width: 80px; height: 80px; object-fit: cover; border-radius: 50%; border: 3px solid transparent; }
-        .actor-item.selected img { border-color: #ff4081; }
+        .actor-item img { width: 80px; height: 80px; object-fit: cover; border-radius: 50%; border: 3px solid transparent; transition: 0.2s; }
+        .actor-item.selected img { border-color: #ff4081; box-shadow: 0 0 8px rgba(255,64,129,0.5); }
         #canvas-container { margin-top: 20px; }
-        canvas { border: 1px solid #ccc; max-width: 100%; }
+        canvas { border: 1px solid #ccc; max-width: 100%; height: auto; }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <h1>2.5次元俳優 好き顔メーカー</h1>
+    <h1>2.5次元俳優<br>好き顔メーカー</h1>
+    
     <div id="menu">
-        <button class="btn" onclick="startBattle()">2択でランキングを作る</button>
+        <p>遊び方を選んでね！</p>
+        <button class="btn" onclick="startBattle()">2択でランキングを作る</button><br>
         <button class="btn" onclick="startGrid()">9マス好き顔一覧を作る</button>
     </div>
 
@@ -40,17 +52,27 @@
     <div id="battle-screen">
         <h2>どっちの顔が好き？</h2>
         <p>直感で選んでね！</p>
+        <div class="progress-bar"><div class="progress-fill" id="progress-fill"></div></div>
+        <p style="font-size: 12px; color: #666;">進捗: <span id="battle-progress">0</span>%</p>
+        
         <div class="battle-container">
-            <div class="face-card" onclick="selectActor(0)">
-                <img id="actor-left-img" src="" alt="">
+            <div class="face-card" onclick="resolveBattle(true)">
+                <img id="actor-left-img" src="" alt="" onerror="this.src='https://via.placeholder.com/200?text=No+Image'">
                 <h3 id="actor-left-name"></h3>
             </div>
-            <div class="face-card" onclick="selectActor(1)">
-                <img id="actor-right-img" src="" alt="">
+            <div class="face-card" onclick="resolveBattle(false)">
+                <img id="actor-right-img" src="" alt="" onerror="this.src='https://via.placeholder.com/200?text=No+Image'">
                 <h3 id="actor-right-name"></h3>
             </div>
         </div>
-        <button class="btn" onclick="backToMenu()" style="background-color:#999; margin-top:30px;">メニューに戻る</button>
+        <button class="btn btn-secondary" style="margin-top:30px;" onclick="backToMenu()">中断してメニューに戻る</button>
+    </div>
+
+    <!-- ランキング結果画面 -->
+    <div id="result-screen">
+        <h2>あなたの好き顔ランキング</h2>
+        <ul class="rank-list" id="rank-list"></ul>
+        <button class="btn" onclick="backToMenu()">メニューに戻る</button>
     </div>
 
     <!-- 9マス画像作成画面 -->
@@ -58,18 +80,17 @@
         <h2>好きな顔を9人選んでね (<span id="select-count">0</span>/9)</h2>
         <div class="actor-list" id="actor-list"></div>
         <button class="btn" onclick="generateGrid()">画像を生成する</button>
-        <button class="btn" onclick="backToMenu()" style="background-color:#999;">メニューに戻る</button>
+        <button class="btn btn-secondary" onclick="backToMenu()">メニューに戻る</button>
         
         <div id="canvas-container">
             <canvas id="bingoCanvas" width="600" height="600"></canvas>
-            <p style="font-size:12px; color:#666;">※画像を長押し（または右クリック）で保存できます</p>
+            <p style="font-size:12px; color:#666; margin-top:10px;">※画像を長押し（または右クリック）で保存できます</p>
         </div>
     </div>
 </div>
 
 <script>
     // ★ここに俳優のデータを登録します
-    // imgの部分には、用意した画像ファイルの名前を入れます
     const actorsData = [
         { id: 1, name: "後藤 大", img: "goto.jpg" },
         { id: 2, name: "荒牧 慶彦", img: "aramaki.jpg" },
@@ -83,18 +104,143 @@
         { id: 10, name: "松田 凌", img: "matsuda.jpg" }
     ];
 
-    let selectedForGrid = [];
-
     function backToMenu() {
         document.getElementById('menu').style.display = 'block';
         document.getElementById('battle-screen').style.display = 'none';
+        document.getElementById('result-screen').style.display = 'none';
         document.getElementById('grid-screen').style.display = 'none';
     }
 
-    /* --- 9マス画像作成機能 --- */
+    /* =======================================
+       マージソートを使った2択ランキング機能
+       ======================================= */
+    let battleResolve = null; // クリック待ち用の関数
+    let totalBattles = 0;
+    let currentBattleCount = 0;
+
+    // ソートに必要な想定バトル回数を計算する概算関数
+    function estimateBattles(n) {
+        return Math.ceil(n * Math.log2(n)) - n + 1;
+    }
+
+    async function startBattle() {
+        document.getElementById('menu').style.display = 'none';
+        document.getElementById('result-screen').style.display = 'none';
+        document.getElementById('battle-screen').style.display = 'block';
+        
+        // 進捗状況のリセット
+        currentBattleCount = 0;
+        totalBattles = estimateBattles(actorsData.length);
+        updateProgress();
+
+        // 俳優リストをシャッフルしてからソート開始
+        const shuffled = [...actorsData].sort(() => 0.5 - Math.random());
+        
+        // マージソート実行（すべて終わるまで待機）
+        const rankedActors = await mergeSort(shuffled);
+        
+        // ソート完了後、結果画面を表示
+        showResult(rankedActors);
+    }
+
+    // 非同期マージソート本体
+    async function mergeSort(arr) {
+        if (arr.length <= 1) return arr;
+        const mid = Math.floor(arr.length / 2);
+        const left = await mergeSort(arr.slice(0, mid));
+        const right = await mergeSort(arr.slice(mid));
+        return await merge(left, right);
+    }
+
+    // 配列の結合と2択比較
+    async function merge(left, right) {
+        let result = [];
+        let i = 0, j = 0;
+        
+        while (i < left.length && j < right.length) {
+            // 画面に2人を表示して、ユーザーの選択（true/false）を待つ
+            const isLeftWinner = await askUser(left[i], right[j]);
+            
+            if (isLeftWinner) {
+                result.push(left[i]);
+                i++;
+            } else {
+                result.push(right[j]);
+                j++;
+            }
+            currentBattleCount++;
+            updateProgress();
+        }
+        return result.concat(left.slice(i)).concat(right.slice(j));
+    }
+
+    // 画面に表示してクリックを待つ関数（Promise）
+    function askUser(actorA, actorB) {
+        return new Promise(resolve => {
+            // 画面にデータをセット
+            document.getElementById('actor-left-name').innerText = actorA.name;
+            document.getElementById('actor-left-img').src = actorA.img;
+            
+            document.getElementById('actor-right-name').innerText = actorB.name;
+            document.getElementById('actor-right-img').src = actorB.img;
+            
+            // クリックされたら resolve を呼び出して結果を返すようにする
+            battleResolve = resolve;
+        });
+    }
+
+    // ユーザーが画像をクリックした時に呼ばれる
+    function resolveBattle(isLeftWinner) {
+        if (battleResolve) {
+            const resolveFunc = battleResolve;
+            battleResolve = null; // 連続クリック防止
+            resolveFunc(isLeftWinner); // trueなら左の勝ち、falseなら右の勝ち
+        }
+    }
+
+    // 進捗バーの更新
+    function updateProgress() {
+        let percent = Math.floor((currentBattleCount / totalBattles) * 100);
+        if (percent > 100) percent = 100;
+        document.getElementById('progress-fill').style.width = percent + '%';
+        document.getElementById('battle-progress').innerText = percent;
+    }
+
+    // 結果表示
+    function showResult(rankedList) {
+        document.getElementById('battle-screen').style.display = 'none';
+        document.getElementById('result-screen').style.display = 'block';
+        
+        const ul = document.getElementById('rank-list');
+        ul.innerHTML = '';
+        
+        rankedList.forEach((actor, index) => {
+            const li = document.createElement('li');
+            li.className = 'rank-item';
+            li.innerHTML = `
+                <span class="rank-num">${index + 1}</span>
+                <img src="${actor.img}" onerror="this.src='https://via.placeholder.com/50?text=No+Img'">
+                <span>${actor.name}</span>
+            `;
+            ul.appendChild(li);
+        });
+    }
+
+    /* =======================================
+       9マス画像作成機能（前回から変更なし）
+       ======================================= */
+    let selectedForGrid = [];
+
     function startGrid() {
         document.getElementById('menu').style.display = 'none';
         document.getElementById('grid-screen').style.display = 'block';
+        selectedForGrid = []; // リセット
+        document.getElementById('select-count').innerText = "0";
+        // キャンバスをクリアしておく
+        const canvas = document.getElementById('bingoCanvas');
+        const ctx = canvas.getContext('2d');
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        
         renderActorList();
     }
 
@@ -104,7 +250,6 @@
         actorsData.forEach(actor => {
             const div = document.createElement('div');
             div.className = 'actor-item';
-            // ※画像がない環境でも枠が見えるようにプレースホルダー画像を使っています
             div.innerHTML = `<img src="${actor.img}" onerror="this.src='https://via.placeholder.com/80?text=No+Img'" alt="${actor.name}"><br>${actor.name}`;
             div.onclick = () => toggleSelect(actor, div);
             listDiv.appendChild(div);
@@ -135,65 +280,32 @@
         const canvas = document.getElementById('bingoCanvas');
         const ctx = canvas.getContext('2d');
         
-        // 背景を白に
         ctx.fillStyle = "#ffffff";
         ctx.fillRect(0, 0, 600, 600);
         
-        // 3x3で画像を描画
-        let loadedCount = 0;
         selectedForGrid.forEach((actor, index) => {
             const x = (index % 3) * 200;
             const y = Math.floor(index / 3) * 200;
             
             const img = new Image();
             img.onload = () => {
-                // 画像を正方形にトリミングして描画
                 ctx.drawImage(img, x, y, 200, 200);
-                // 名前を文字で入れる
                 ctx.fillStyle = "rgba(255, 255, 255, 0.7)";
                 ctx.fillRect(x, y + 170, 200, 30);
                 ctx.fillStyle = "#000";
-                ctx.font = "bold 16px sans-serif";
+                ctx.font = "bold 18px sans-serif";
                 ctx.textAlign = "center";
-                ctx.fillText(actor.name, x + 100, y + 190);
+                ctx.fillText(actor.name, x + 100, y + 192);
             };
             img.onerror = () => {
-                // 画像読み込み失敗時の代わり
                 ctx.fillStyle = "#f0f0f0";
                 ctx.fillRect(x, y, 200, 200);
                 ctx.fillStyle = "#333";
                 ctx.font = "14px sans-serif";
                 ctx.fillText("No Image", x + 100, y + 100);
             }
-            img.src = actor.img; // 用意した画像のパス
+            img.src = actor.img;
         });
-    }
-
-    /* --- 2択ランキング機能（簡易版） --- */
-    // ※本格的なソートアルゴリズム（マージソート等）を実装すると長くなるため、
-    // まずはランダムに2人表示する仕組みのベースを記載しています。
-    function startBattle() {
-        document.getElementById('menu').style.display = 'none';
-        document.getElementById('battle-screen').style.display = 'block';
-        showNextBattle();
-    }
-
-    function showNextBattle() {
-        // ランダムに2人選ぶ（実際はここに勝ち抜き戦のロジックを入れます）
-        const shuffled = [...actorsData].sort(() => 0.5 - Math.random());
-        
-        document.getElementById('actor-left-name').innerText = shuffled[0].name;
-        document.getElementById('actor-left-img').src = shuffled[0].img;
-        document.getElementById('actor-left-img').onerror = function() { this.src='https://via.placeholder.com/150?text=No+Img'; };
-
-        document.getElementById('actor-right-name').innerText = shuffled[1].name;
-        document.getElementById('actor-right-img').src = shuffled[1].img;
-        document.getElementById('actor-right-img').onerror = function() { this.src='https://via.placeholder.com/150?text=No+Img'; };
-    }
-
-    function selectActor(winnerIndex) {
-        // 選ばれた時の処理。本格的なランキングを作る場合、勝敗データを記録して次へ進む
-        showNextBattle();
     }
 </script>
 
